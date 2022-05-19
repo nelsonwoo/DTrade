@@ -62,7 +62,7 @@ public:
 
 		ImGui::Begin("Price Depth");
 		{
-			ImGui::LabelText("##Price Depth Series ID", "Id = %s", "PRODUCT_02");
+			ImGui::LabelText("##Price Depth Series ID", "Id = %s", AppContext::s_selectedProductId.c_str());
 			if (ImGui::BeginTable("ASK", 2, flags))
 			{
 				ImGui::TableSetupColumn("Prc");
@@ -124,26 +124,17 @@ public:
 		static int order_qty = 0;
 		ImGui::Begin("Place Order Style A");
 		{
-			ImGui::LabelText("##Order Series ID", "Id = %s", "PRODUCT_02");
+			ImGui::LabelText("##Order Series ID", "Id = %s", AppContext::s_selectedProductId.c_str());
 
 			ImGui::BeginGroup();
 			{
 				// Order Prc
 				ImGui::PushItemWidth(100);
 				ImGui::SliderIntPrice("##Order Prc Slider", &order_prc_point, 5, -15000, 15000, 2, "@ Prc");
-				order_prc_f = 0.01f * order_prc_point;
 				ImGui::PopItemWidth();
-				/*
-				ImGui::PushItemWidth(100);
-				ImGui::SliderInt("##Order Prc Slider", &order_prc_point, 15000, 35000, "@ Prc %d");
-				ImGui::PopItemWidth();
-				*/
-				// TO-DO:
-				// - Create InputPrice function with steps
 				ImGui::SameLine();
 				ImGui::PushItemWidth(200);
-				ImGui::InputFloat("##Order Prc Input", &order_prc_f, 0.05f, 0.05f, "%.2f");
-				order_prc_point = static_cast<int>(order_prc_f / 0.01f);
+				ImGui::InputIntPrice("##Order Prc Input", &order_prc_point, 5, 2); // values of 5-point steps 2 decimals
 				ImGui::PopItemWidth();
 				
 				// Order Qty
@@ -155,7 +146,7 @@ public:
 				ImGui::InputInt("##Order Qty Input", &order_qty, 1, 100);
 				ImGui::PopItemWidth();
 
-				ImGui::LabelText("order_prc_point", "%d", order_prc_point);
+				//ImGui::LabelText("order_prc_point", "%d", order_prc_point);
 			}
 			ImGui::EndGroup();
 			ImVec2 size = ImGui::GetItemRectSize(); // want to know the current size of this group
@@ -182,7 +173,7 @@ public:
 		static bool is_buying = true;
 		ImGui::Begin("Place Order Style B");
 		{
-			ImGui::LabelText("##Order Series ID", "Id = %s", "PRODUCT_02");
+			ImGui::LabelText("##Order Series ID", "Id = %s", AppContext::s_selectedProductId.c_str());
 
 			// BUY SELL Buttons
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0.0f, 6.0f }); // Push item spacing
@@ -225,19 +216,13 @@ public:
 			ImGui::BeginGroup();
 			{
 				// Order Prc
-				// TO-DO:
-				// - Store value as int but display with decimal.
-				/*
 				ImGui::PushItemWidth(100);
-				ImGui::SliderInt("##Order Prc B Slider", &order_prc_point, 15000, 35000, "@ Prc");
-				order_prc_f = order_prc_multiplier * order_prc_point;
+				ImGui::SliderIntPrice("##Order Prc B Slider", &order_prc_point, 5, -15000, 15000, 2, "@ Prc");
 				ImGui::PopItemWidth();
 				ImGui::SameLine();
 				ImGui::PushItemWidth(200);
-				ImGui::InputFloat("##Order Prc B Input", &order_prc_f, order_prc_multiplier, order_prc_multiplier, "%.2f");
-				order_prc_point = static_cast<int>((order_prc_f + 0.000001f) / order_prc_multiplier);
+				ImGui::InputIntPrice("##Order Prc B Input", &order_prc_point, 5, 2); // values of 5-point steps 2 decimals
 				ImGui::PopItemWidth();
-				*/
 				// Order Qty
 				ImGui::PushItemWidth(100);
 				ImGui::SliderInt("##Order Qty B Slider", &order_qty, 1, 100, "x Qty");

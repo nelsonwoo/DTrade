@@ -17,6 +17,7 @@ namespace AppContext {
 
 	extern std::vector<std::string> s_productList;
 	extern std::vector<std::string> s_bookmarkList;
+	extern std::string s_selectedProductId;
 	extern std::vector<PrcQty> s_priceDepthBuy;
 	extern std::vector<PrcQty> s_priceDepthSell;
 	extern PriceTrend s_tickerPrice_e;

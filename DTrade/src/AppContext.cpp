@@ -18,6 +18,7 @@ namespace AppContext {
 		{"20071","93"},
 		{"20079","110"}
 	};
+	std::string s_selectedProductId = "PRODUCT_02";
 	std::string s_tickerPrice = "20056";
 	PriceTrend s_tickerPrice_e = PriceTrend::Flat;
 }
