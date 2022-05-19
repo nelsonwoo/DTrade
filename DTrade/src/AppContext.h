@@ -6,21 +6,27 @@
 
 namespace AppContext {
 
-	struct PrcQty {
-		std::string prc;
-		std::string qty;
-	};
+	// to be replaced
+	extern std::vector<std::string> s_productList;
+	extern std::vector<std::string> s_bookmarkList;
 
 	enum class PriceTrend {
 		Up, Down, Flat
 	};
 
-	extern std::vector<std::string> s_productList;
-	extern std::vector<std::string> s_bookmarkList;
-	extern std::string s_selectedProductId;
-	extern std::vector<PrcQty> s_priceDepthBuy;
-	extern std::vector<PrcQty> s_priceDepthSell;
-	extern PriceTrend s_tickerPrice_e;
-	extern std::string s_tickerPrice;
+	struct PrcQty {
+		std::string prc{};
+		std::string qty{};
+		PriceTrend eTrend{ PriceTrend::Flat };
+	};
+
+	struct ProductPresentation {
+		std::string id{};
+		std::vector<PrcQty> priceDepth[2];
+		PrcQty ticker{};
+	};
+
+	extern ProductPresentation s_theProduct; // to be replaced
+	extern ProductPresentation* s_selectedProduct;
 
 }

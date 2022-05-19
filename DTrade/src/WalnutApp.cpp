@@ -5,6 +5,7 @@
 #include "AppContext.h"
 
 Walnut::Timer g_timer;
+bool g_backgroundLight{ false };
 
 class ExampleLayer : public Walnut::Layer
 {
@@ -13,6 +14,7 @@ public:
 	{
 		ImGui::Begin("Products");
 		{
+			//ImGui::HelpMarker("Type B for Buy\nType S for Sell");
 			if (ImGui::BeginListBox("##Products", ImVec2(-FLT_MIN, -FLT_MIN)))
 			{
 				static size_t item_current_idx = 0; // Here we store our selection data as an index.
@@ -62,21 +64,23 @@ public:
 
 		ImGui::Begin("Price Depth");
 		{
-			ImGui::LabelText("##Price Depth Series ID", "Id = %s", AppContext::s_selectedProductId.c_str());
+			ImGui::LabelText("##Price Depth Series ID", "Id = %s", AppContext::s_selectedProduct->id.c_str());
 			if (ImGui::BeginTable("ASK", 2, flags))
 			{
 				ImGui::TableSetupColumn("Prc");
 				ImGui::TableSetupColumn("Qty");
 				ImGui::TableHeadersRow();
-				for (size_t z = AppContext::s_priceDepthSell.size() - 1; z < AppContext::s_priceDepthSell.size(); --z) //loop ok: unsigned backward
+				for (size_t z = AppContext::s_selectedProduct->priceDepth[1].size() - 1;
+					z < AppContext::s_selectedProduct->priceDepth[1].size();
+					--z) //loop ok: unsigned backward
 				{
 					ImGui::TableNextRow();
 					ImGui::TableSetColumnIndex(0);
-					ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::ImColor(0.5f, 0.0f, 0.0f));
-					ImGui::TextUnformatted(AppContext::s_priceDepthSell[z].prc.c_str());
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4Color(0.3f, 0.0f, 0.0f));
+					ImGui::TextUnformatted(AppContext::s_selectedProduct->priceDepth[1][z].prc.c_str());
 					ImGui::PopStyleColor();
 					ImGui::TableNextColumn();
-					ImGui::TextUnformatted(AppContext::s_priceDepthSell[z].qty.c_str());
+					ImGui::TextUnformatted(AppContext::s_selectedProduct->priceDepth[1][z].qty.c_str());
 				}
 				ImGui::EndTable();
 			}
@@ -86,30 +90,30 @@ public:
 				ImGui::TableSetColumnIndex(1);
 				switch (g_timer.ElapsedSecs() % 3) {
 				case 0:
-					ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::ImColor(0.2f, 0.7f, 0.2f));
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4Color(0.0f, 0.4f, 0.0f));
 					break;
 				case 1:
-					ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::ImColor(0.7f, 0.2f, 0.2f));
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4Color(0.3f, 0.0f, 0.0f));
 					break;
 				default:
-					ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::ImColor(0.6f, 0.6f, 0.6f));
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4Color(0.5f, 0.5f, 0.5f));
 					break;
 				}
-				ImGui::TextUnformatted(AppContext::s_tickerPrice.c_str());
+				ImGui::TextUnformatted(AppContext::s_selectedProduct->ticker.prc.c_str());
 				ImGui::PopStyleColor();
 				ImGui::EndTable();
 			}
 			if (ImGui::BeginTable("BID", 2, flags))
 			{
-				for (size_t z = 0; z < AppContext::s_priceDepthBuy.size(); ++z)
+				for (size_t z = 0; z < AppContext::s_selectedProduct->priceDepth[0].size(); ++z)
 				{
 					ImGui::TableNextRow();
 					ImGui::TableSetColumnIndex(0);
-					ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::ImColor(0.0f, 0.5f, 0.0f));
-					ImGui::TextUnformatted(AppContext::s_priceDepthBuy[z].prc.c_str());
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4Color(0.0f, 0.4f, 0.0f));
+					ImGui::TextUnformatted(AppContext::s_selectedProduct->priceDepth[0][z].prc.c_str());
 					ImGui::PopStyleColor();
 					ImGui::TableNextColumn();
-					ImGui::TextUnformatted(AppContext::s_priceDepthBuy[z].qty.c_str());
+					ImGui::TextUnformatted(AppContext::s_selectedProduct->priceDepth[0][z].qty.c_str());
 				}
 				ImGui::EndTable();
 			}
@@ -117,20 +121,17 @@ public:
 		ImGui::End();
 
 
-
-		static float order_prc_f = -100.0f;
-//		static float order_prc_multiplier = 0.01f;
-		static int order_prc_point = -100;
+		static int order_prc_point = 100;
 		static int order_qty = 0;
 		ImGui::Begin("Place Order Style A");
 		{
-			ImGui::LabelText("##Order Series ID", "Id = %s", AppContext::s_selectedProductId.c_str());
+			ImGui::LabelText("##Order Series ID", "Id = %s", AppContext::s_selectedProduct->id.c_str());
 
 			ImGui::BeginGroup();
 			{
 				// Order Prc
 				ImGui::PushItemWidth(100);
-				ImGui::SliderIntPrice("##Order Prc Slider", &order_prc_point, 5, -15000, 15000, 2, "@ Prc");
+				ImGui::SliderIntPrice("##Order Prc Slider", &order_prc_point, 5, -1000, 15000, 2, "@ Prc");
 				ImGui::PopItemWidth();
 				ImGui::SameLine();
 				ImGui::PushItemWidth(200);
@@ -154,15 +155,15 @@ public:
 			// BUY SELL Buttons
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 30.0f, 30.0f }); // Push item spacing
 			ImGui::Spacing(); // Insert veritical spacing
-			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::ImColor(0.0f, 0.8f, 0.0f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.0f, 0.9f, 0.0f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.0f, 0.7f, 0.0f));
+			ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4Color(0.0f, 0.4f, 0.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4Color(0.0f, 0.5f, 0.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4Color(0.0f, 0.6f, 0.0f));
 			ImGui::Button("BUY", ImVec2((size.x - ImGui::GetStyle().ItemSpacing.x) * 0.5f, size.y));
 			ImGui::PopStyleColor(3);
 			ImGui::SameLine();
-			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::ImColor(0.8f, 0.0f, 0.0f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.9f, 0.0f, 0.0f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.7f, 0.0f, 0.0f));
+			ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4Color(0.3f, 0.0f, 0.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4Color(0.4f, 0.0f, 0.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4Color(0.5f, 0.0f, 0.0f));
 			ImGui::Button("SELL", ImVec2((size.x - ImGui::GetStyle().ItemSpacing.x) * 0.5f, size.y));
 			ImGui::PopStyleColor(3);
 			ImGui::PopStyleVar(); // pop item spacing
@@ -173,39 +174,39 @@ public:
 		static bool is_buying = true;
 		ImGui::Begin("Place Order Style B");
 		{
-			ImGui::LabelText("##Order Series ID", "Id = %s", AppContext::s_selectedProductId.c_str());
+			ImGui::LabelText("##Order Series ID", "Id = %s", AppContext::s_selectedProduct->id.c_str());
 
 			// BUY SELL Buttons
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0.0f, 6.0f }); // Push item spacing
 			if (is_buying) {
-				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::ImColor(0.0f, 0.8f, 0.0f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.0f, 0.8f, 0.0f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.0f, 0.6f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4Color(0.0f, 0.4f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4Color(0.0f, 0.5f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4Color(0.0f, 0.6f, 0.0f));
 				if (ImGui::Button("BUY", ImVec2(178.0f, 36.0f))) {
 					is_buying = true;
 				}
 				ImGui::PopStyleColor(3);
 				ImGui::SameLine();
-				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::ImColor(0.4f, 0.4f, 0.4f));
+				ImGui::PushStyleColor(ImGuiCol_Button,        (ImVec4)ImColor::ImColor(0.4f, 0.4f, 0.4f));
 				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.6f, 0.4f, 0.4f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.6f, 0.4f, 0.4f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive,  (ImVec4)ImColor::ImColor(0.6f, 0.4f, 0.4f));
 				if (ImGui::Button("SELL", ImVec2(130.0f, 30.f))) {
 					is_buying = false;
 				}
 				ImGui::PopStyleColor(3);
 			}
 			else {
-				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::ImColor(0.4f, 0.4f, 0.4f));
+				ImGui::PushStyleColor(ImGuiCol_Button,        (ImVec4)ImColor::ImColor(0.4f, 0.4f, 0.4f));
 				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.4f, 0.6f, 0.4f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.4f, 0.6f, 0.4f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive,  (ImVec4)ImColor::ImColor(0.4f, 0.6f, 0.4f));
 				if (ImGui::Button("BUY", ImVec2(130.0f, 30.0f))) {
 					is_buying = true;
 				}
 				ImGui::PopStyleColor(3);
 				ImGui::SameLine();
-				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::ImColor(0.8f, 0.0f, 0.0f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.8f, 0.0f, 0.0f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.6f, 0.0f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4Color(0.3f, 0.0f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4Color(0.4f, 0.0f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4Color(0.5f, 0.0f, 0.0f));
 				if (ImGui::Button("SELL", ImVec2(178.0f, 36.f))) {
 					is_buying = false;
 				}
@@ -239,16 +240,16 @@ public:
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 30.0f, 30.0f }); // Push item spacing
 			ImGui::Spacing(); // Insert veritical spacing
 			if (is_buying) {
-				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::ImColor(0.0f, 0.8f, 0.0f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.0f, 0.9f, 0.0f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.0f, 0.7f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4Color(0.0f, 0.4f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4Color(0.0f, 0.5f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4Color(0.0f, 0.6f, 0.0f));
 				ImGui::Button("Confirm BUY", ImVec2(size.x, size.y));
 				ImGui::PopStyleColor(3);
 			}
 			else {
-				ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::ImColor(0.8f, 0.0f, 0.0f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::ImColor(0.9f, 0.0f, 0.0f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::ImColor(0.7f, 0.0f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4Color(0.3f, 0.0f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4Color(0.4f, 0.0f, 0.0f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4Color(0.5f, 0.0f, 0.0f));
 				ImGui::Button("Confirm SELL", ImVec2(size.x, size.y));
 				ImGui::PopStyleColor(3);
 			}
@@ -257,7 +258,69 @@ public:
 		}
 		ImGui::End();
 
+		ImGui::Begin("Place Order Style C");
+		{
+			struct TextFilters
+			{
+				static int FilterDigits(ImGuiInputTextCallbackData* data)
+				{
+					if (data->EventChar < 256 && strchr("0123456789", (char)data->EventChar))
+						return 0;
+					return 1;
+				}
+
+				static int FilterPrice(ImGuiInputTextCallbackData* data)
+				{
+					if (data->EventChar < 256 && strchr("-0.123456789", (char)data->EventChar))
+						return 0;
+					return 1;
+				}
+
+				static int FilterBS(ImGuiInputTextCallbackData* data)
+				{
+					if (data->EventChar < 256 && strchr("BS", (char)data->EventChar))
+						return 0;
+					return 1;
+				}
+
+				static int FilterConfirm(ImGuiInputTextCallbackData* data)
+				{
+					if (data->EventChar < 256 && strchr("G", (char)data->EventChar))
+						return 0;
+					return 1;
+				}
+			};
+
+			ImGui::PushItemWidth(200);
+			static char buf1[33] = ""; ImGui::InputText("Id", buf1, 33, ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_CharsNoBlank);
+			static char buf4[2] = ""; ImGui::InputText("B or S", buf4, 2, ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_CallbackCharFilter, TextFilters::FilterBS);
+			static char buf2[11] = ""; ImGui::InputText("Qty", buf2, 11, ImGuiInputTextFlags_CallbackCharFilter, TextFilters::FilterDigits);
+			static char buf3[13] = ""; ImGui::InputText("Prc", buf3, 13, ImGuiInputTextFlags_CallbackCharFilter, TextFilters::FilterPrice);
+			static char buf5[2] = ""; ImGui::InputText("Type 'G' to Confirm Order", buf5, 2, ImGuiInputTextFlags_CallbackCharFilter, TextFilters::FilterConfirm);
+			ImGui::PopItemWidth();
+			if (buf5[0] == 'G') {
+				buf3[0] = '\0';
+				buf5[0] = '\0';
+			}
+		}
+		ImGui::End();
+
 		ImGui::ShowDemoWindow();
+	}
+
+private:
+	ImVec4 ImVec4Color(float r, float g, float b)
+	{
+		if (g_backgroundLight) {
+			return (ImVec4)ImColor::ImColor(r, g, b);
+		}
+		else {
+			return (ImVec4)ImColor::ImColor(
+				(r > 0.01f && r < 0.99f ? 1.0f - r : r),
+				(g > 0.01f && g < 0.99f ? 1.0f - g : g),
+				(b > 0.01f && b < 0.99f ? 1.0f - b : b)
+			);
+		}
 	}
 };
 
@@ -265,6 +328,29 @@ Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
 {
 	Walnut::ApplicationSpecification spec;
 	spec.Name = "DTrade";
+
+	AppContext::s_theProduct = {
+		"The Product",
+		{
+			{
+				{"20055","30"},
+				{"20053","32"},
+				{"20042","76"},
+				{"20038","115"},
+				{"20027","120"}
+			},
+			{
+				{"20056","30"},
+				{"20058","32"},
+				{"20063","27"},
+				{"20071","93"},
+				{"20079","110"}
+			}
+		},
+		{
+			"20056", "3", AppContext::PriceTrend::Flat
+		}
+	};
 
 	Walnut::Application* app = new Walnut::Application(spec);
 	app->PushLayer<ExampleLayer>();
