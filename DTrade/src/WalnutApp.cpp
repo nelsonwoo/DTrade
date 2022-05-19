@@ -40,8 +40,8 @@ public:
 				// Display headers so we can inspect their interaction with borders.
 				// (Headers are not the main purpose of this section of the demo, so we are not elaborating on them too much. See other sections for details)
 				ImGui::TableSetupColumn("State");
-				ImGui::TableSetupColumn("ID");
-				ImGui::TableSetupColumn("Last Price");
+				ImGui::TableSetupColumn("Id");
+				ImGui::TableSetupColumn("Ticker");
 				ImGui::TableHeadersRow();
 
 				for (size_t z = 0; z < AppContext::s_bookmarkList.size(); ++z)
@@ -68,7 +68,7 @@ public:
 				ImGui::TableSetupColumn("Prc");
 				ImGui::TableSetupColumn("Qty");
 				ImGui::TableHeadersRow();
-				for (size_t z = AppContext::s_priceDepthSell.size() - 1; z < AppContext::s_priceDepthSell.size(); --z)
+				for (size_t z = AppContext::s_priceDepthSell.size() - 1; z < AppContext::s_priceDepthSell.size(); --z) //loop ok: unsigned backward
 				{
 					ImGui::TableNextRow();
 					ImGui::TableSetColumnIndex(0);
@@ -118,9 +118,9 @@ public:
 
 
 
-		static float order_prc_f = 0.0f;
-		static float order_prc_multiplier = 0.01f;
-		static int order_prc_point = 0;
+		static float order_prc_f = -100.0f;
+//		static float order_prc_multiplier = 0.01f;
+		static int order_prc_point = -100;
 		static int order_qty = 0;
 		ImGui::Begin("Place Order Style A");
 		{
@@ -129,25 +129,33 @@ public:
 			ImGui::BeginGroup();
 			{
 				// Order Prc
-				// TO-DO:
-				// - Store value as int but display with decimal.
 				ImGui::PushItemWidth(100);
-				ImGui::SliderInt("##Order Prc Slider", &order_prc_point, 15000, 35000, "Prc =");
-				order_prc_f = order_prc_multiplier * order_prc_point;
+				ImGui::SliderIntPrice("##Order Prc Slider", &order_prc_point, 5, -15000, 15000, 2, "@ Prc");
+				order_prc_f = 0.01f * order_prc_point;
 				ImGui::PopItemWidth();
+				/*
+				ImGui::PushItemWidth(100);
+				ImGui::SliderInt("##Order Prc Slider", &order_prc_point, 15000, 35000, "@ Prc %d");
+				ImGui::PopItemWidth();
+				*/
+				// TO-DO:
+				// - Create InputPrice function with steps
 				ImGui::SameLine();
 				ImGui::PushItemWidth(200);
-				ImGui::InputFloat("##Order Prc Input", &order_prc_f, order_prc_multiplier, order_prc_multiplier, "%.2f");
-				order_prc_point = static_cast<int>((order_prc_f + 0.000001f) / order_prc_multiplier);
+				ImGui::InputFloat("##Order Prc Input", &order_prc_f, 0.05f, 0.05f, "%.2f");
+				order_prc_point = static_cast<int>(order_prc_f / 0.01f);
 				ImGui::PopItemWidth();
+				
 				// Order Qty
 				ImGui::PushItemWidth(100);
-				ImGui::SliderInt("##Order Qty Slider", &order_qty, 1, 100, "Qty =");
+				ImGui::SliderInt("##Order Qty Slider", &order_qty, 1, 100, "x Qty");
 				ImGui::PopItemWidth();
 				ImGui::SameLine();
 				ImGui::PushItemWidth(200);
 				ImGui::InputInt("##Order Qty Input", &order_qty, 1, 100);
 				ImGui::PopItemWidth();
+
+				ImGui::LabelText("order_prc_point", "%d", order_prc_point);
 			}
 			ImGui::EndGroup();
 			ImVec2 size = ImGui::GetItemRectSize(); // want to know the current size of this group
@@ -219,8 +227,9 @@ public:
 				// Order Prc
 				// TO-DO:
 				// - Store value as int but display with decimal.
+				/*
 				ImGui::PushItemWidth(100);
-				ImGui::SliderInt("##Order Prc B Slider", &order_prc_point, 15000, 35000, "Prc =");
+				ImGui::SliderInt("##Order Prc B Slider", &order_prc_point, 15000, 35000, "@ Prc");
 				order_prc_f = order_prc_multiplier * order_prc_point;
 				ImGui::PopItemWidth();
 				ImGui::SameLine();
@@ -228,9 +237,10 @@ public:
 				ImGui::InputFloat("##Order Prc B Input", &order_prc_f, order_prc_multiplier, order_prc_multiplier, "%.2f");
 				order_prc_point = static_cast<int>((order_prc_f + 0.000001f) / order_prc_multiplier);
 				ImGui::PopItemWidth();
+				*/
 				// Order Qty
 				ImGui::PushItemWidth(100);
-				ImGui::SliderInt("##Order Qty B Slider", &order_qty, 1, 100, "Qty =");
+				ImGui::SliderInt("##Order Qty B Slider", &order_qty, 1, 100, "x Qty");
 				ImGui::PopItemWidth();
 				ImGui::SameLine();
 				ImGui::PushItemWidth(200);
