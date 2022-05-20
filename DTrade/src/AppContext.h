@@ -28,5 +28,5 @@ namespace AppContext {
 
 	extern ProductPresentation s_theProduct; // to be replaced
 	extern ProductPresentation* s_selectedProduct;
-
+	extern char s_selectedProductId[33];
 }

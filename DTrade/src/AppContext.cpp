@@ -29,4 +29,5 @@ namespace AppContext {
 	
 	ProductPresentation s_theProduct;
 	ProductPresentation* s_selectedProduct{ &s_theProduct };;
+	char s_selectedProductId[33]{};
 }
